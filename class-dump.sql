@@ -1,9 +1,8 @@
 
 CREATE TABLE class(
     class_id SERIAL PRIMARY KEY,
-    course_num integer,
-    course_name varchar(255),
-    section_name varchar(255),
+    course_num varchar(255),
+    section_num INT,
     term varchar(255),
     class_desc TEXT
 );
