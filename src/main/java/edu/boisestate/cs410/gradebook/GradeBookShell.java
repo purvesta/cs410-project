@@ -1,10 +1,10 @@
 package edu.boisestate.cs410.gradebook;
 
 import com.budhash.cliche.Command;
+import com.budhash.cliche.Param;
 import com.budhash.cliche.ShellFactory;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.sql.*;
 
 public class GradeBookShell {
@@ -27,8 +27,16 @@ public class GradeBookShell {
      * CRUD operation commands.
      *******************************/
 
+    /**
+     * @param courseNum
+     * @param term
+     * @param sectionNum
+     * @param description
+     * @throws SQLException
+     */
     @Command
-    public void newClass(String courseNum, String term, int sectionNum, String description) throws SQLException {
+    public void newClass(@Param(name="courseNum") String courseNum, @Param(name="term") String term,
+                         @Param(name="sectionNum") int sectionNum, @Param(name="description") String description) throws SQLException {
         String query = "INSERT INTO class (course_num, term, section_num, class_desc)" +
                        "VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
@@ -41,6 +49,9 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @throws SQLException
+     */
     @Command
     public void listClasses() throws SQLException {
 
@@ -50,15 +61,19 @@ public class GradeBookShell {
                        "          ON (c.class_id=sc.class_id)" +
                        " GROUP BY c.course_num";
         try (Statement stmt = db.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
-            System.out.println("Course Number : Num Students");
+            System.out.format("%-20.20s %-20.20s\n", "Course Number", "Num Students");
             while (rs.next()) {
-                System.out.format("%s : %d\n", rs.getString(1), rs.getInt(2));
+                System.out.format("%-20.20s %-20.20s\n", rs.getString(1), rs.getInt(2));
             }
         }
     }
 
+    /**
+     * @param courseNum
+     * @throws SQLException
+     */
     @Command
-    public void selectClass(String courseNum) throws SQLException {
+    public void selectClass(@Param(name="courseNum") String courseNum) throws SQLException {
         String query = "SELECT class_id, course_num, term, section_num" +
                        "  FROM class" +
                        " WHERE term=(" +
@@ -83,8 +98,13 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @param courseNum
+     * @param term
+     * @throws SQLException
+     */
     @Command
-    public void selectClass(String courseNum, String term) throws SQLException {
+    public void selectClass(@Param(name="courseNum") String courseNum, @Param(name="term") String term) throws SQLException {
         String query = "SELECT class_id, course_num, term, section_num" +
                        "  FROM class" +
                        " WHERE course_num=? AND term=?;";
@@ -104,8 +124,15 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @param courseNum
+     * @param term
+     * @param sectionNum
+     * @throws SQLException
+     */
     @Command
-    public void selectClass(String courseNum, String term, int sectionNum) throws SQLException {
+    public void selectClass(@Param(name="courseNum") String courseNum, @Param(name="term") String term,
+                            @Param(name="sectionNum") int sectionNum) throws SQLException {
         String query = "SELECT class_id, course_num, term, section_num" +
                        "  FROM class" +
                        " WHERE course_num=? AND term=? AND section_num=?;";
@@ -114,6 +141,7 @@ public class GradeBookShell {
             stmt.setString(2, term);
             stmt.setInt(3, sectionNum);
             ResultSet rs = stmt.executeQuery();
+            rs.last();
             this.currID = rs.getInt(1);
             this.currClass = rs.getString(2);
             this.currTerm = rs.getString(3);
@@ -121,6 +149,9 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @throws SQLException
+     */
     @Command
     public void showClass() throws SQLException {
         System.out.format("Currently active class:\n\t%s %s %d\n", this.currClass, this.currTerm, this.currSection);
@@ -133,6 +164,10 @@ public class GradeBookShell {
      *******************************/
 
     /***** Category and Item Management *****/
+
+    /**
+     * @throws SQLException
+     */
     @Command
     public void showCategories() throws SQLException {
         String query = "SELECT cat_name, cat_weight" +
@@ -141,15 +176,20 @@ public class GradeBookShell {
         try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
             stmt.setInt(1, this.currID);
             ResultSet rs = stmt.executeQuery();
-            System.out.println("Category : Weight");
+            System.out.format("%-20.20s %-20.20s\n", "Category", "Weight");
             while (rs.next()) {
-                System.out.format("%s : %d\n", rs.getString(1), rs.getInt(2));
+                System.out.format("%-20.20s %-20.20s\n", rs.getString(1), rs.getInt(2));
             }
         }
     }
 
+    /**
+     * @param catName
+     * @param catWeight
+     * @throws SQLException
+     */
     @Command
-    public void addCategory(String catName, int catWeight) throws SQLException {
+    public void addCategory(@Param(name="catName") String catName, @Param(name="catWeight") int catWeight) throws SQLException {
         String query = "INSERT INTO category (cat_name, cat_weight, class_id)" +
                        "VALUES (?, ?, ?)";
         try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
@@ -161,6 +201,9 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @throws SQLException
+     */
     @Command
     public void showItems() throws SQLException {
         String query = "SELECT i.item_name, i.item_points_worth" +
@@ -171,15 +214,23 @@ public class GradeBookShell {
         try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
             stmt.setInt(1, this.currID);
             ResultSet rs = stmt.executeQuery();
-            System.out.println("Item : Points");
+            System.out.format("%-20.20s %-20.20s\n", "Item", "Points");
             while (rs.next()) {
-                System.out.format("%s : %d\n", rs.getString(1), rs.getInt(2));
+                System.out.format("%-20.20s %-20.20s\n\n", rs.getString(1), rs.getInt(2));
             }
         }
     }
 
+    /**
+     * @param itemName
+     * @param catName
+     * @param description
+     * @param points
+     * @throws SQLException
+     */
     @Command
-    public void addItem(String itemName, String catName, String description, int points) throws SQLException {
+    public void addItem(@Param(name="itemName") String itemName, @Param(name="catName") String catName,
+                        @Param(name="description") String description, @Param(name="points") int points) throws SQLException {
         int catID = 0;
         String query = "SELECT cat_id" +
                        "  FROM category AS c" +
@@ -205,8 +256,15 @@ public class GradeBookShell {
 
     /***** Student Management *****/
 
+    /**
+     * @param username
+     * @param studentID
+     * @param name
+     * @throws SQLException
+     */
     @Command
-    public void addStudent(String username, int studentID, String name) throws SQLException {
+    public void addStudent(@Param(name="username") String username, @Param(name="studentID") int studentID,
+                           @Param(name="name") String name) throws SQLException {
         String currName = "";
         boolean exists = false;
         String query = "SELECT student_name, count(student_id)" +
@@ -255,8 +313,12 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @param username
+     * @throws SQLException
+     */
     @Command
-    public void addStudent(String username) throws SQLException {
+    public void addStudent(@Param(name="username") String username) throws SQLException {
         boolean exists = false;
         String query = "SELECT student_name, count(student_id)" +
                 "  FROM student" +
@@ -284,6 +346,9 @@ public class GradeBookShell {
         }
     }
 
+    /**
+     * @throws SQLException
+     */
     @Command
     public void showStudents() throws SQLException {
         String query = "SELECT s.username, s.student_name" +
@@ -294,14 +359,18 @@ public class GradeBookShell {
         try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
             stmt.setInt(1, this.currID);
             ResultSet rs = stmt.executeQuery();
-            System.out.println("Username : Student Name");
+            System.out.format("%-20.20s %-20.20s\n", "Username", "Student Name");
             while (rs.next())
-                System.out.format("%s : %s\n", rs.getString(1), rs.getString(2));
+                System.out.format("%-20.20s %-20.20s\n", rs.getString(1), rs.getString(2));
         }
     }
 
+    /**
+     * @param query
+     * @throws SQLException
+     */
     @Command
-    public void showStudents(String query) throws SQLException {
+    public void showStudents(@Param(name="query") String query) throws SQLException {
         // Use UPPER in order to ignore case
         query = "%"+query+"%";
         String sql = "SELECT s.username, s.student_name" +
@@ -314,14 +383,21 @@ public class GradeBookShell {
             stmt.setString(2, query);
             stmt.setString(3, query);
             ResultSet rs = stmt.executeQuery();
-            System.out.println("Username : Student Name");
+            System.out.format("%-20.20s %-20.20s\n", "Username", "Student Name");
             while (rs.next())
-                System.out.format("%s : %s\n", rs.getString(1), rs.getString(2));
+                System.out.format("%-20.20s %-20.20s\n", rs.getString(1), rs.getString(2));
         }
     }
 
+    /**
+     * @param itemName
+     * @param username
+     * @param grade
+     * @throws SQLException
+     */
     @Command
-    public void grade(String itemName, String username, int grade) throws SQLException {
+    public void grade(@Param(name="itemName") String itemName, @Param(name="username") String username,
+                      @Param(name="grade") int grade) throws SQLException {
         // Get studentID associated with username
         int studID = 0;
         String query = "SELECT student_id" +
@@ -390,9 +466,14 @@ public class GradeBookShell {
 
     /***** Grade Reporting *****/
 
+    /**
+     * @param username
+     * @throws SQLException
+     */
     @Command
-    public void studentGrades(String username) throws SQLException {
+    public void studentGrades(@Param(name="username") String username) throws SQLException {
 
+        // Item grades by category
         String query1 = "SELECT c.cat_name, i.item_name, CAST(g.score AS FLOAT)/i.item_points_worth*100 AS item_score" +
                         "  FROM grade AS g" +
                         "      RIGHT JOIN item AS i" +
@@ -416,33 +497,132 @@ public class GradeBookShell {
                 System.out.format("%-20.20s %-20.20s %-20.20s\n",rs.getString(1), rs.getString(2), rs.getFloat(3));
         }
 
-        // Not calculated correctly...
-        String query2 = "SELECT CAST(SUM(g.score) AS FLOAT)/SUM(i.item_points_worth)*100 AS attempted" +
-                        "  FROM grade AS g" +
-                        "      JOIN item AS i" +
-                        "          ON (g.item_id=i.item_id)" +
-                        "      JOIN category AS c" +
-                        "          ON (i.cat_id=c.cat_id)" +
-                        "      JOIN student_class AS sc" +
-                        "          ON (c.class_id=sc.class_id)" +
-                        "      JOIN student AS s" +
-                        "          ON (sc.student_id=s.student_id)" +
-                        " WHERE c.class_id=? AND s.username=?";
+        calcAttemptedAndTotal(username, 1);
 
-        try (PreparedStatement stmt = db.prepareStatement(query2, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+    }
+
+    private void calcAttemptedAndTotal(String username, int func) throws SQLException {
+        // Func 1 == studentGrades
+        // Func 2 == gradebook
+
+        double attempted = 0.0;
+        // Calculate Attempted
+        String query1 = "SELECT SUM(a.attempted)" +
+                        "  FROM (" +
+                        "        SELECT (1.0*SUM(gs.score))/SUM(i.item_points_worth)*100*(c.cat_weight*0.01) AS attempted" +
+                        "          FROM (SELECT s.username, g.score, g.student_id, g.item_id" +
+                        "                  FROM grade AS g " +
+                        "                      RIGHT JOIN student AS s" +
+                        "                          ON g.student_id=s.student_id" +
+                        "               ) AS gs" +
+                        "              JOIN item AS i" +
+                        "                  ON (gs.item_id=i.item_id)" +
+                        "              JOIN category AS c" +
+                        "                  ON (i.cat_id=c.cat_id)" +
+                        "              JOIN student_class AS sc" +
+                        "                  ON (c.class_id=sc.class_id)" +
+                        "         WHERE c.class_id=? AND gs.username=?" +
+                        "         GROUP BY c.cat_weight" +
+                        "       ) AS a";
+
+        try (PreparedStatement stmt = db.prepareStatement(query1, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
             stmt.setInt(1, this.currID);
             stmt.setString(2, username);
             ResultSet rs = stmt.executeQuery();
+            System.out.println();
+            while (rs.next()) {
+                if (func == 1)
+                    System.out.format("%-20.20s %-20.20s\n", "Attempted Grade", rs.getFloat(1));
+                attempted = rs.getDouble(1);
+            }
+        }
+
+        // Gather the student ID... my brain is fried
+        int studID = 0;
+        String studIDQuery = "SELECT student_id FROM student WHERE username=?";
+        try (PreparedStatement stmt = db.prepareStatement(studIDQuery, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            rs.last();
+            studID = rs.getInt(1);
+        }
+
+        // Calculate Total
+        double total = 0.0;
+        String query2 = "SELECT SUM(CAST(f.attempted AS FLOAT)/f.total*f.cat_weight*0.01)*100" +
+                        "  FROM (" +
+                        "SELECT a.cat_name, a.cat_weight, SUM(a.attempted) AS attempted, SUM(t.total) AS total" +
+                        "  FROM (SELECT c.cat_name, c.cat_weight, SUM(g.score) AS attempted" +
+                        "          FROM category AS c" +
+                        "              JOIN item AS i" +
+                        "                  ON (c.cat_id=i.cat_id)" +
+                        "              JOIN grade AS g" +
+                        "                  ON (i.item_id=g.item_id)" +
+                        "         WHERE g.student_id=? AND c.class_id=?" +
+                        "         GROUP BY c.cat_name, c.cat_weight) as a" +
+                        "      JOIN (SELECT c.cat_name, SUM(i.item_points_worth) AS total" +
+                        "              FROM category AS c" +
+                        "                  JOIN item AS i" +
+                        "                      ON (c.cat_id=i.cat_id)" +
+                        "             WHERE c.class_id=?" +
+                        "             GROUP BY c.cat_name) AS t" +
+                        "          ON a.cat_name=t.cat_name" +
+                        " GROUP BY a.cat_name, a.cat_weight) AS f";
+        try (PreparedStatement stmt = db.prepareStatement(query2, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            stmt.setInt(1, studID);
+            stmt.setInt(2, this.currID);
+            stmt.setInt(3, this.currID);
+            ResultSet rs = stmt.executeQuery();
+            rs.last();
+            if(rs.getRow() == 0)
+                total = 0.0;
+            else
+                total = rs.getFloat(1);
+
+            if (func == 1) {
+                System.out.format("%-20.20s %-20.20s\n", "Total Grade", rs.getFloat(1));
+                return;
+            }
+        }
+
+        String query3 = "SELECT student_name FROM student WHERE username=?";
+        try (PreparedStatement stmt = db.prepareStatement(query3, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
             while (rs.next())
-                System.out.format("%-20.20s %-20.20s\n", "Attempted Grade", rs.getFloat(1));
+                System.out.format("%-20.20s %-20.20s %-20.20s", rs.getString(1), attempted, total);
         }
     }
 
+    /**
+     * @throws SQLException
+     */
     @Command
     public void gradebook() throws SQLException {
-//        generate(donors, 10);
+        // Get all students in class
+        String query = "SELECT s.student_id, s.username, s.student_name" +
+                       "  FROM student AS s" +
+                       "      JOIN student_class AS sc" +
+                       "          ON (s.student_id=sc.student_id)" +
+                       "WHERE sc.class_id=?";
+        try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            stmt.setInt(1, this.currID);
+            ResultSet rs = stmt.executeQuery();
+            System.out.format("%-20.20s %-20.20s %-20.20s", "Student", "Attempted", "Total");
+            while (rs.next()){
+                calcAttemptedAndTotal(rs.getString(2), 2);
+            }
+            System.out.println();
+        }
     }
 
+    /**
+     * Entry point.
+     *
+     * @param args
+     * @throws IOException
+     * @throws SQLException
+     */
     public static void main(String[] args) throws IOException, SQLException {
         // First (and only) command line argument: database URL
         String dbUrl = args[0];
