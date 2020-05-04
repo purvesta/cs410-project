@@ -330,8 +330,8 @@ public class GradeBookShell {
         try (PreparedStatement stmt = db.prepareStatement(query, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
-            rs.next();
-            studID = rs.getInt(1);
+            while (rs.next())
+                studID = rs.getInt(1);
         }
         // Get itemID associated with category associated with class
         // Limit 1 for safety, although there shouldn't be more than 1 record returned
@@ -346,8 +346,8 @@ public class GradeBookShell {
             stmt.setInt(1, this.currID);
             stmt.setString(2, itemName);
             ResultSet rs = stmt.executeQuery();
-            rs.next();
-            itemID = rs.getInt(1);
+            while (rs.next())
+                itemID = rs.getInt(1);
         }
         // Check if grade exists for the item
         boolean exists = false;
@@ -358,9 +358,9 @@ public class GradeBookShell {
             stmt.setInt(1, studID);
             stmt.setInt(2, itemID);
             ResultSet rs = stmt.executeQuery();
-            rs.next();
-            if(rs.getInt(1) > 0)
-                exists = true;
+            while (rs.next())
+                if(rs.getInt(1) > 0)
+                    exists = true;
         }
         // Either update or insert depending on if grade exists
         if(exists){
@@ -392,7 +392,50 @@ public class GradeBookShell {
 
     @Command
     public void studentGrades(String username) throws SQLException {
-//        generate(donors, 10);
+
+        String query1 = "SELECT c.cat_name, i.item_name, CAST(g.score AS FLOAT)/i.item_points_worth*100 AS item_score" +
+                        "  FROM grade AS g" +
+                        "      RIGHT JOIN item AS i" +
+                        "          ON (g.item_id=i.item_id)" +
+                        "      JOIN category AS c" +
+                        "          ON (i.cat_id=c.cat_id)" +
+                        "      JOIN student_class AS sc" +
+                        "          ON (c.class_id=sc.class_id)" +
+                        "      JOIN student AS s" +
+                        "          ON (sc.student_id=s.student_id)" +
+                        " WHERE c.class_id=? AND s.username=?" +
+                        " GROUP BY c.cat_name, i.item_name, item_score";
+
+        try (PreparedStatement stmt = db.prepareStatement(query1, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            stmt.setInt(1, this.currID);
+            stmt.setString(2, username);
+            ResultSet rs = stmt.executeQuery();
+            System.out.println(username);
+            System.out.format("%-20.20s %-20.20s %-20.20s\n","Category Name", "Item", "Item Score");
+            while (rs.next())
+                System.out.format("%-20.20s %-20.20s %-20.20s\n",rs.getString(1), rs.getString(2), rs.getFloat(3));
+        }
+
+        // Not calculated correctly...
+        String query2 = "SELECT CAST(SUM(g.score) AS FLOAT)/SUM(i.item_points_worth)*100 AS attempted" +
+                        "  FROM grade AS g" +
+                        "      JOIN item AS i" +
+                        "          ON (g.item_id=i.item_id)" +
+                        "      JOIN category AS c" +
+                        "          ON (i.cat_id=c.cat_id)" +
+                        "      JOIN student_class AS sc" +
+                        "          ON (c.class_id=sc.class_id)" +
+                        "      JOIN student AS s" +
+                        "          ON (sc.student_id=s.student_id)" +
+                        " WHERE c.class_id=? AND s.username=?";
+
+        try (PreparedStatement stmt = db.prepareStatement(query2, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE)) {
+            stmt.setInt(1, this.currID);
+            stmt.setString(2, username);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next())
+                System.out.format("%-20.20s %-20.20s\n", "Attempted Grade", rs.getFloat(1));
+        }
     }
 
     @Command
